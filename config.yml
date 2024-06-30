@@ -1,0 +1,6 @@
+environments:
+  - develop
+  - production
+
+settings:
+  is_multi_project_mode: true

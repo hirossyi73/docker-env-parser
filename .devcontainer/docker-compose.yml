@@ -1,0 +1,10 @@
+services:
+  parser:
+    build:
+      context: ../
+      dockerfile: .devcontainer/Dockerfile
+    environment:
+      PYTHONPATH: /app
+    volumes:
+      - ../:/app
+    tty: true
