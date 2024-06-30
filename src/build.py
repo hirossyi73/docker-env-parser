@@ -5,7 +5,6 @@ from models.config import GlobalConfig
 from dependency_injector import containers, providers
 from dependency_injector.wiring import Provide, inject
 from usecases.build_usecase import BuildUsecase
-import yaml
 
 # DI: https://github.com/ets-labs/python-dependency-injector
 

@@ -3,7 +3,6 @@ import fnmatch
 import os
 import shutil
 from models.config import Config
-import yaml
 
 
 class Project:
@@ -41,7 +40,7 @@ class Project:
                 continue
 
             # ルートフォルダからのパスを作成
-            topath = self.get_pj_dist_root(environment) + '/{file_rel_path}'
+            topath = self.get_pj_dist_root(environment) + f'/{file_rel_path}'
 
             # ファイルを置き換える設定の場合、置き換え後のファイルを作成
             if self._is_replace_file_content(file_rel_path):
@@ -63,8 +62,9 @@ class Project:
 
     def _get_replaced_text(self, content: str) -> str:
         """ 置き換え後のテキストを取得 """
-        for key, value in self.config.replacements.items():
-            content = content.replace(f'{{{{{key}}}}}', value)
+        for _, parser in self.config.get_parsers().items():
+            # parserのparseメソッドを使って、contentを置き換える
+            content = parser.parse(content)
 
         return content
 
