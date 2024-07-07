@@ -6,21 +6,13 @@ import yaml
 
 class Config:
     """Class that holds the contents of the configuration file"""
-    # Dictionary for parameter replacements
     _replacements: Optional[dict[str, str]]
-    # Whether to ignore globally or not
     _is_ignore: Optional[bool]
-    # Whether to automatically merge configuration files or not
     _is_auto_merge_config: Optional[bool]
-    # Whether to only replace ".temp" files or not
     _is_only_replace_temp: Optional[bool]
-    # Whether to use multi-project mode or not
     _is_multi_project_mode: Optional[bool]
-    # List of files to perform replacements on
     _replacement_files: Optional[dict[str, str]]
-    # List of files to ignore for replacements
     _ignore_files: Optional[list[str]]
-    # Parsers for performing parameter replacements
     _parsers: Optional[dict]
 
     def __init__(self):
@@ -35,30 +27,37 @@ class Config:
 
     @property
     def replacements(self) -> dict[str, str]:
+        """Dictionary for parameter replacements"""
         return self._replacements if self._replacements is not None else {}
 
     @property
     def is_ignore(self) -> bool:
+        """Whether to ignore globally or not"""
         return self._is_ignore if self._is_ignore is not None else False
 
     @property
     def is_auto_merge_config(self) -> bool:
+        """Whether to automatically merge configuration files or not"""
         return self._is_auto_merge_config if self._is_auto_merge_config is not None else True
 
     @property
     def is_only_replace_temp(self) -> bool:
+        """Whether to only replace ".temp" files or not"""
         return self._is_only_replace_temp if self._is_only_replace_temp is not None else False
 
     @property
     def is_multi_project_mode(self) -> bool:
+        """Whether to use multi-project mode or not"""
         return self._is_multi_project_mode if self._is_multi_project_mode is not None else False
 
     @property
     def replacement_files(self) -> dict[str, str]:
+        """List of files to perform replacements on"""
         return self._replacement_files if self._replacement_files is not None else {}
 
     @property
     def ignore_files(self) -> list[str]:
+        """List of files to ignore for replacements"""
         return self._ignore_files if self._ignore_files is not None else []
 
     def init_config(self, root_path: str | None, environment: str, global_config: Config = None) -> dict:
@@ -68,12 +67,12 @@ class Config:
 
         # Read the common configuration file if it exists
         path = f'{base_path}config.yml'
-        config = self._merge_config(path, config)
+        config = self._merge_config(self._read_string(path), config)
 
         # Read the environment-specific configuration file if it exists
         if environment is not None:
             path = f'{base_path}config.{environment}.yml'
-            config = self._merge_config(path, config)
+            config = self._merge_config(self._read_string(path), config)
 
         # Set the parameters
         self._replacements = self._get_config_value(config, ['replacements'])
@@ -100,6 +99,7 @@ class Config:
 
     def get_parsers(self) -> dict:
         """Get parsers (config, file, custom)"""
+        # Return as it is if already obtained
         if self._parsers is not None:
             return self._parsers
 
@@ -118,9 +118,16 @@ class Config:
         self._parsers = parsers
         return self._parsers
 
-    def _merge_config(self, path: str, config: dict) -> dict:
+    def _read_string(self, path: str) -> str:
+        """Read a file as a string"""
+        if not os.path.isfile(path):
+            return None
+        with open(path, encoding='utf-8')as f:
+            return f.read()
+
+    def _merge_config(self, yaml_string: str, config: dict) -> dict:
         """Merge values from the configuration file"""
-        config = Config.get_yaml_config(path)
+        config = self._get_yaml_config(yaml_string)
         config = {**config, **({} if config is None else config)}
         return config
 
@@ -149,17 +156,15 @@ class Config:
             result[os.path.basename(file)] = f'{base_path}replacement_files/{file}'
         return result
 
-    @staticmethod
-    def get_yaml_config(path: str) -> dict:
-        """Merge values from a YAML file"""
-        if not os.path.isfile(path):
+    def _get_yaml_config(self, yaml_string: str) -> dict:
+        """get yaml values from a YAML string"""
+        if yaml_string is None:
             return {}
-        with open(path, encoding='utf-8')as f:
-            r = yaml.safe_load(f)
-            # Merge if the value exists
-            if r is None:
-                return {}
-            return r
+        r = yaml.safe_load(yaml_string)
+        # Merge if the value exists
+        if r is None:
+            return {}
+        return r
 
 
 class GlobalConfig(Config):

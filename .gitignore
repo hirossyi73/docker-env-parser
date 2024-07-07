@@ -5,6 +5,7 @@
 *.dylib
 
 __pycache__/
+.pytest_cache/
 .pyc
 .vscode
 .env
@@ -12,3 +13,5 @@ temp/
 .github
 dist/
 templates/
+htmlcov/
+.coverage

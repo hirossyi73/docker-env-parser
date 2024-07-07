@@ -16,7 +16,7 @@ class Project:
         """Root path of the project"""
         if self.config.is_multi_project_mode:
             return f"templates/{self.name}"
-        return "templates"
+        return self.name
 
     def get_pj_dist_root(self, environment: str):
         """Get the root path of the project's dist"""
