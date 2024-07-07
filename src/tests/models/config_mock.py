@@ -6,7 +6,7 @@ class ConfigMock(Config):
     get_replacement_file_names_callback: Optional[Callable] = None
 
     def set_replacements(self, replacements: Optional[dict[str, str]]) -> None:
-        self._replacements = replacements
+        self._replacement_params = replacements
 
     def set_is_ignore(self, is_ignore: Optional[bool]) -> None:
         self._is_ignore = is_ignore
@@ -38,7 +38,7 @@ class ConfigMock(Config):
 
 class GlobalConfigMock(GlobalConfig):
     def set_replacements(self, replacements: Optional[dict[str, str]]) -> None:
-        self._replacements = replacements
+        self._replacement_params = replacements
 
     def set_is_ignore(self, is_ignore: Optional[bool]) -> None:
         self._is_ignore = is_ignore

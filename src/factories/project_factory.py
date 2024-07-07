@@ -15,8 +15,8 @@ class ProjectFactory(ProjectFactoryBase):
     """Factory for creating Project instances(default)"""
 
     def make(self, name: str, environment: str, config: Config) -> Project:
-        local_config = Config()
-        local_config.init_config(f'{FolderName.TARGET_ROOT_FOLDER.value}/{name}', environment, config)
+        local_config = Config(f'{FolderName.TARGET_ROOT_FOLDER.value}/{name}', environment)
+        local_config.init_config(config)
         # Create a project class
         project = Project(name, environment, local_config)
 

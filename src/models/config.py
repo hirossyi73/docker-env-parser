@@ -1,23 +1,29 @@
 from __future__ import annotations
 import os
 from typing import Optional
+from injector import inject
 from models.const import FolderName
 import yaml
 
 
 class Config:
     """Class that holds the contents of the configuration file"""
-    _replacements: Optional[dict[str, str]]
+    _root_path: str | None
+    _environment: str | None
+    _replacement_params: Optional[dict[str, str]]
     _is_ignore: Optional[bool]
     _is_auto_merge_config: Optional[bool]
     _is_only_replace_temp: Optional[bool]
     _is_multi_project_mode: Optional[bool]
-    _replacement_files: Optional[dict[str, str]]
+    _replacement_files: Optional[list[str]]
     _ignore_files: Optional[list[str]]
     _parsers: Optional[dict]
 
-    def __init__(self):
-        self._replacements = {}
+    @inject
+    def __init__(self,  root_path: str | None, environment: str | None):
+        self._root_path = root_path
+        self._environment = environment
+        self._replacement_params = {}
         self._is_ignore = None
         self._is_auto_merge_config = None
         self._is_only_replace_temp = None
@@ -27,9 +33,9 @@ class Config:
         self._parsers = None
 
     @property
-    def replacements(self) -> dict[str, str]:
+    def replacement_params(self) -> dict[str, str]:
         """Dictionary for parameter replacements"""
-        return self._replacements if self._replacements is not None else {}
+        return self._replacement_params if self._replacement_params is not None else {}
 
     @property
     def is_ignore(self) -> bool:
@@ -52,33 +58,54 @@ class Config:
         return self._is_multi_project_mode if self._is_multi_project_mode is not None else False
 
     @property
-    def replacement_files(self) -> dict[str, str]:
+    def replacement_files(self) -> list[str]:
         """List of files to perform replacements on"""
-        return self._replacement_files if self._replacement_files is not None else {}
+        return self._replacement_files if self._replacement_files is not None else []
 
     @property
     def ignore_files(self) -> list[str]:
         """List of files to ignore for replacements"""
         return self._ignore_files if self._ignore_files is not None else []
 
-    def init_config(self, root_path: str | None, environment: str, global_config: Config = None) -> dict:
+    @property
+    def ignore_files(self) -> list[str]:
+        """List of files to ignore for replacements"""
+        return self._ignore_files if self._ignore_files is not None else []
+
+    @property
+    def environment(self):
+        """ Environment name. 
+        *If this is global config, this value is None."""
+        return self._environment
+
+    @property
+    def root_path(self):
+        """Root path of the config. 
+        *If this is global config, this value is None."""
+        return self._root_path
+
+    @property
+    def base_path(self) -> str:
+        """List of files to ignore for replacements"""
+        return (self.root_path if self.root_path is not None else '') + ('/' if self.root_path is not None else '')
+
+    def init_config(self, global_config: Config = None) -> dict:
         """Reads the configuration file and sets the parameters"""
         config_dict = {}
-        base_path = (root_path if root_path is not None else '') + ('/' if root_path is not None else '')
 
         # Read the common configuration file if it exists
-        path = f'{base_path}config.yml'
+        path = f'{self.base_path}config.yml'
         _config_dict = self._get_config_dict_from_path(path)
         config_dict = self._merge_config_dict(_config_dict, config_dict)
 
         # Read the environment-specific configuration file if it exists
-        if environment is not None:
-            path = f'{base_path}config.{environment}.yml'
+        if self.environment is not None:
+            path = f'{self.base_path}config.{self.environment}.yml'
             _config_dict = self._get_config_dict_from_path(path)
             config_dict = self._merge_config_dict(_config_dict, config_dict)
 
         # Set the parameters
-        self._set_config_from_dict(environment, config_dict, base_path, global_config)
+        self._set_config_from_dict(config_dict,  global_config)
 
         return config_dict
 
@@ -88,32 +115,23 @@ class Config:
         if self._parsers is not None:
             return self._parsers
 
-        from models.parser.param_parser import ParamParser
-        from models.parser.file_parser import FileParser
-        parsers = {}
-
-        # Get parser from config
-        for key, value in self.replacements.items():
-            parsers[key] = ParamParser(self, key, value)
-
-        # Get file parser
-        for key, path in self.replacement_files.items():
-            parsers[key] = FileParser(self, key, path)
-
-        self._parsers = parsers
+        # TODO: Convert to DI using ParserFactory. Error with "ImportError: cannot import name 'Config' from partially initialized module 'models.config' (most likely due to a circular import) ".
+        from factories.parser_factory import ParserFactory
+        parser_factory: ParserFactory = ParserFactory()
+        self._parsers = parser_factory.makes(self)
         return self._parsers
 
-    def _set_config_from_dict(self, environment: str, config_dict: dict, base_path: str, global_config: Config = None):
+    def _set_config_from_dict(self, config_dict: dict,  global_config: Config = None):
         """Set the parameters from the dictionary"""
 
         # Set the parameters
-        self._replacements = self._get_config_value(config_dict, ['replacements'])
+        self._replacement_params = self._get_config_value(config_dict, ['replacements'])
         self._is_ignore = self._get_config_value(config_dict, ['settings', 'is_ignore'])
         self._is_auto_merge_config = self._get_config_value(config_dict, ['settings', 'is_auto_merge_config'])
         self._is_only_replace_temp = self._get_config_value(config_dict, ['settings', 'is_only_replace_temp'])
         self._is_multi_project_mode = self._get_config_value(config_dict, ['settings', 'is_multi_project_mode'])
         self._ignore_files = self._get_config_value(config_dict, ['settings', 'ignore_files'])
-        self._replacement_files = self._get_replacement_files(environment, base_path)
+        self._replacement_files = self._get_replacement_files()
 
         # Merge global config and config
         if global_config is not None:
@@ -123,8 +141,8 @@ class Config:
             self._is_multi_project_mode = global_config.is_multi_project_mode if self._is_multi_project_mode is None else self.is_multi_project_mode
 
             # Append Items
-            self._replacements = {**global_config.replacements, **self.replacements}
-            self._replacement_files = {**global_config.replacement_files, **self.replacement_files}
+            self._replacement_params = {**global_config.replacement_params, **self.replacement_params}
+            self._replacement_files = global_config.replacement_files + self.replacement_files
             self._ignore_files = global_config.ignore_files + self.ignore_files
 
     def _merge_config_dict(self, config_dict: dict, base_config_dict: dict) -> dict:
@@ -167,42 +185,9 @@ class Config:
             return {}
         return r
 
-    def _get_replacement_files(self, environment: str, base_path: str) -> dict[str, str]:
+    def _get_replacement_files(self) -> list[str]:
         """Get the list of files for replacements"""
-        tmp_result = {}
-
-        # get all files in the replacement_files directory
-        files = self._get_replacement_file_names(base_path)
-        for file in files:
-            # get only .txt files
-            file_name = os.path.basename(file)
-            if not file_name.endswith('.txt'):
-                continue
-            # Remove ".txt" name.
-            base_name = file_name.replace('.txt', '')
-            tmp_result[base_name] = f'{base_path}/{FolderName.REPLACEMENT_FILES.value}/{file}'
-
-        # Re-loop result array. And if contains ".", check env in arg[1].
-        # And if match arg[1], set as key: arg[0] value: arg[1]
-        result = {}
-        for key, value in tmp_result.items():
-            if '.' not in key:
-                result[key] = value
-                continue
-
-            # Check environment. If not match, skip.
-            key_env = key.split('.')[1]
-            if key_env != environment:
-                continue
-            # Set key without env.
-            else:
-                result[key.split('.')[0]] = value
-
-        return result
-
-    def _get_replacement_file_names(self, base_path: str) -> list[str]:
-        """Get the list of files for replacements"""
-        replacement_files_path = f'{base_path}/{FolderName.REPLACEMENT_FILES.value}'
+        replacement_files_path = f'{self.base_path}/{FolderName.REPLACEMENT_FILES.value}'
         if not os.path.exists(replacement_files_path):
             return []
 
@@ -215,16 +200,16 @@ class GlobalConfig(Config):
     _environments: list[str]
 
     def __init__(self):
-        super().__init__()
+        super().__init__(None, None)
         self._environments = []
 
     @property
     def environments(self) -> list[str]:
         return self._environments
 
-    def init_config(self, root_path: str | None, environment: str):
+    def init_config(self):
         """Reads the configuration file and sets the parameters"""
-        config = super().init_config(root_path, environment)
+        config = super().init_config()
 
         # Set the parameters
         self._environments = self._get_config_value(config, ['environments'])

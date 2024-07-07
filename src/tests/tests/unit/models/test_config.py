@@ -5,16 +5,16 @@ from tests.models.config_mock import ConfigMock, GlobalConfigMock
 
 class TestConfig(unittest.TestCase):
     def setUp(self):
-        self.config = ConfigMock()
         self.base_path = "src/tests/test_files/project_config"
+        self.config = ConfigMock(None, "development")
 
     def test_default_props(self):
-        self.assertEqual(self.config.replacements, {})
+        self.assertEqual(self.config.replacement_params, {})
         self.assertEqual(self.config.is_ignore, False)
         self.assertEqual(self.config.is_auto_merge_config, True)
         self.assertEqual(self.config.is_only_replace_temp, False)
         self.assertEqual(self.config.is_multi_project_mode, False)
-        self.assertEqual(self.config.replacement_files, {})
+        self.assertEqual(self.config.replacement_files, [])
         self.assertEqual(self.config.ignore_files, [])
         self.assertEqual(self.config.get_parsers(), {})
 
@@ -118,9 +118,9 @@ class TestConfig(unittest.TestCase):
         })
 
     def test_init_config(self):
-        self.config.init_config(self.base_path, "development")
+        self.config.init_config()
 
-        self.assertEqual(self.config.replacements, {'foo': 'bar', 'baz': 'qux'})
+        self.assertEqual(self.config.replacement_params, {'foo': 'bar', 'baz': 'qux'})
         self.assertEqual(self.config.is_ignore, True)
         self.assertEqual(self.config.is_auto_merge_config, False)
         self.assertEqual(self.config.is_only_replace_temp, False)
@@ -142,9 +142,9 @@ class TestConfig(unittest.TestCase):
         global_config = GlobalConfigMock()
         global_config.set_is_multi_project_mode(False)
         global_config.set_is_only_replace_temp(True)
-        self.config.init_config(self.base_path, "development", global_config)
+        self.config.init_config(global_config)
 
-        self.assertEqual(self.config.replacements, {'foo': 'bar', 'baz': 'qux'})
+        self.assertEqual(self.config.replacement_params, {'foo': 'bar', 'baz': 'qux'})
         self.assertEqual(self.config.is_ignore, True)
         self.assertEqual(self.config.is_auto_merge_config, False)
         self.assertEqual(self.config.is_only_replace_temp, True)

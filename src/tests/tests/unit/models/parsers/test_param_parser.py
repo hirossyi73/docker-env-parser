@@ -5,17 +5,16 @@ from tests.models.config_mock import ConfigMock
 
 class TestParamParser(unittest.TestCase):
     def setUp(self):
-        pass
+        self.config = ConfigMock(None, "development")
 
     def test_parse_replace(self):
-        parser = ParamParser(ConfigMock(), "foo", "bar")
+        parser = ParamParser(self.config, "foo", "bar")
         self.assertEqual(parser.key, "foo")
         self.assertEqual(parser.value, "bar")
         self.assertEqual(parser.parse("This is {{foo}}"), "This is bar")
-        
+
     def test_parse_not_replace(self):
-        parser = ParamParser(ConfigMock(), "foo", "bar")
+        parser = ParamParser(self.config, "foo", "bar")
         self.assertEqual(parser.key, "foo")
         self.assertEqual(parser.value, "bar")
         self.assertEqual(parser.parse("This is {{aaa}}"), "This is {{aaa}}")
-        

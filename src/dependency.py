@@ -17,7 +17,7 @@ class Dependency():
     def config(cls, binder):
         # Load the common configuration file
         global_config = GlobalConfig()
-        global_config.init_config(None, None)
+        global_config.init_config()
         binder.bind(GlobalConfig, to=global_config, scope=singleton)
 
         # bind the ProjectFactoryBase class to the ProjectFactory class
