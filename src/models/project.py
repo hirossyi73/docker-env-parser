@@ -12,17 +12,11 @@ class Project:
         self.config = config
 
     @property
-    def pjroot(self):
+    def pj_root(self):
         """Root path of the project"""
         if self.config.is_multi_project_mode:
             return f"templates/{self.name}"
         return self.name
-
-    def get_pj_dist_root(self, environment: str):
-        """Get the root path of the project's dist"""
-        if self.config.is_multi_project_mode:
-            return f'dist/docker-{environment}/{self.name}'
-        return f'dist/docker-{environment}'
 
     def build(self, environment: str):
         # Skip if it's an ignored configuration
@@ -30,16 +24,16 @@ class Project:
             return
 
         # Get a list of files in the "temp" folder
-        files = self._get_all_files(f"{self.pjroot}/src")
+        files = self._get_all_files(f"{self.pj_root}/src")
         for file in files:
             # Get the file name without the path up to "src/"
-            file_rel_path = file.replace(f"{self.pjroot}/src/", '')
+            file_rel_path = file.replace(f"{self.pj_root}/src/", '')
             # Skip if the file is in the ignore list
             if self._is_ignore_file(file_rel_path):
                 continue
 
             # Create the path relative to the root folder
-            topath = self.get_pj_dist_root(environment) + f'/{file_rel_path}'
+            to_path = self._get_pj_dist_root(environment) + f'/{file_rel_path}'
 
             # If it's a file to be replaced, create the replaced file
             if self._is_replace_file_content(file_rel_path):
@@ -48,10 +42,16 @@ class Project:
                 # Perform the replacement
                 content = self._get_replaced_text(content)
                 # Write the content to the file specified by topath.replace('.temp', '')
-                self._write_replaced_content(topath.replace('.temp', ''), content)
+                self._write_replaced_content(to_path.replace('.temp', ''), content)
             # Otherwise, copy the file as is
             else:
-                self._copy_file(file, topath)
+                self._copy_file(file, to_path)
+
+    def _get_pj_dist_root(self, environment: str):
+        """Get the root path of the project's dist"""
+        if self.config.is_multi_project_mode:
+            return f'dist/docker-{environment}/{self.name}'
+        return f'dist/docker-{environment}'
 
     def _get_target_content(self, path: str):
         """Get the content of the specified file"""
@@ -91,13 +91,13 @@ class Project:
         # Check if the specified file ends with ".temp"
         return file_rel_path.endswith('.temp')
 
-    def _copy_file(self, frompath: str, topath: str):
+    def _copy_file(self, from_path: str, to_path: str):
         """Copy the file"""
-        os.makedirs(os.path.dirname(topath), exist_ok=True)
-        shutil.copy(frompath, topath)
+        os.makedirs(os.path.dirname(to_path), exist_ok=True)
+        shutil.copy(from_path, to_path)
 
-    def _write_replaced_content(self, topath: str, content: str):
+    def _write_replaced_content(self, to_path: str, content: str):
         """Write the replaced file content"""
-        os.makedirs(os.path.dirname(topath), exist_ok=True)
-        with open(topath, 'w') as output_file:
+        os.makedirs(os.path.dirname(to_path), exist_ok=True)
+        with open(to_path, 'w') as output_file:
             output_file.write(content)

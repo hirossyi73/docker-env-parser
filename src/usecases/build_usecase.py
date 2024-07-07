@@ -17,7 +17,6 @@ class BuildUsecase:
 
     def build(self):
         """ build files """
-
         for env in self.global_config.environments:
             for project in self._get_projects(env):
                 project.build(env)

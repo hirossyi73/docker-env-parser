@@ -15,3 +15,4 @@ dist/
 templates/
 htmlcov/
 .coverage
+coverage.xml
