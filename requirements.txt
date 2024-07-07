@@ -1,2 +1,2 @@
 pyyaml
-dependency-injector
+injector

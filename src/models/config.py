@@ -1,27 +1,26 @@
 from __future__ import annotations
 import os
 from typing import Optional
-
 import yaml
 
 
 class Config:
-    """ 設定ファイルの内容を保持するクラス """
-    # パラメータ置き換え用の辞書
+    """Class that holds the contents of the configuration file"""
+    # Dictionary for parameter replacements
     _replacements: Optional[dict[str, str]]
-    # プロジェクト全体で除外するかどうか
+    # Whether to ignore globally or not
     _is_ignore: Optional[bool]
-    # 自動的に設定ファイルのマージを行うかどうか
+    # Whether to automatically merge configuration files or not
     _is_auto_merge_config: Optional[bool]
-    # ".temp"ファイルのみ置き換えを行うかどうか
+    # Whether to only replace ".temp" files or not
     _is_only_replace_temp: Optional[bool]
-    # 複数プロジェクトモードを使用するかどうか
+    # Whether to use multi-project mode or not
     _is_multi_project_mode: Optional[bool]
-    # 置き換えを行うファイルの一覧
+    # List of files to perform replacements on
     _replacement_files: Optional[dict[str, str]]
-    # 置き換えを実施しないファイルの一覧
+    # List of files to ignore for replacements
     _ignore_files: Optional[list[str]]
-    # パラメータ置き換えを行うためのパーサー
+    # Parsers for performing parameter replacements
     _parsers: Optional[dict]
 
     def __init__(self):
@@ -63,20 +62,20 @@ class Config:
         return self._ignore_files if self._ignore_files is not None else []
 
     def init_config(self, root_path: str | None, environment: str, global_config: Config = None) -> dict:
-        """ 設定ファイルを読みこみでパラメータにセットする """
+        """Reads the configuration file and sets the parameters"""
         config = {}
         base_path = (root_path if root_path is not None else '') + ('/' if root_path is not None else '')
 
-        # 共通の設定ファイルが存在する場合、読み込む
+        # Read the common configuration file if it exists
         path = f'{base_path}config.yml'
         config = self._merge_config(path, config)
 
-        # 環境用の設定ファイルが存在する場合、読み込む
+        # Read the environment-specific configuration file if it exists
         if environment is not None:
             path = f'{base_path}config.{environment}.yml'
             config = self._merge_config(path, config)
 
-        # 各パラメータにセット
+        # Set the parameters
         self._replacements = self._get_config_value(config, ['replacements'])
         self._is_ignore = self._get_config_value(config, ['settings', 'is_ignore'])
         self._is_auto_merge_config = self._get_config_value(config, ['settings', 'is_auto_merge_config'])
@@ -100,7 +99,7 @@ class Config:
         return config
 
     def get_parsers(self) -> dict:
-        """ Get parsers(config, file, custom) """
+        """Get parsers (config, file, custom)"""
         if self._parsers is not None:
             return self._parsers
 
@@ -108,11 +107,11 @@ class Config:
         from models.parser.file_parser import FileParser
         parsers = {}
 
-        # get parser from config
+        # Get parser from config
         for key, value in self.replacements.items():
             parsers[key] = ConfigParser(self, key, value)
 
-        # get file parser
+        # Get file parser
         for key, path in self.replacement_files.items():
             parsers[key] = FileParser(self, key, path)
 
@@ -120,13 +119,13 @@ class Config:
         return self._parsers
 
     def _merge_config(self, path: str, config: dict) -> dict:
-        """ 設定ファイルから値をマージする """
+        """Merge values from the configuration file"""
         config = Config.get_yaml_config(path)
         config = {**config, **({} if config is None else config)}
         return config
 
     def _get_config_value(self, config: dict, keys: list[str]):
-        """ configから値を取得する処理 """
+        """Get a value from the config"""
         if config is None:
             return None
         else:
@@ -139,32 +138,32 @@ class Config:
         return vals
 
     def _get_replacement_files(self, base_path: str) -> dict[str, str]:
-        """ ファイルによる変換のファイル名一覧を取得 """
+        """Get the list of files for replacements"""
         result = {}
         replacement_files_path = f'{base_path}replacement_files'
         if not os.path.exists(replacement_files_path):
             return result
         files = os.listdir(replacement_files_path)
         for file in files:
-            # キー名にファイル名(拡張子は除く)、値にbase_path + fileをセット
+            # Set the file name (without extension) as the key and base_path + file as the value
             result[os.path.basename(file)] = f'{base_path}replacement_files/{file}'
         return result
 
     @staticmethod
     def get_yaml_config(path: str) -> dict:
-        """ yamlファイルから値をマージする """
+        """Merge values from a YAML file"""
         if not os.path.isfile(path):
             return {}
         with open(path, encoding='utf-8')as f:
             r = yaml.safe_load(f)
-            # 値が存在してれば、マージ
+            # Merge if the value exists
             if r is None:
                 return {}
             return r
 
 
 class GlobalConfig(Config):
-    """ 設定ファイルの内容を保持するクラス(全環境用) """
+    """Class that holds the contents of the configuration file (for all environments)"""
     _environments: list[str]
 
     def __init__(self):
@@ -176,10 +175,10 @@ class GlobalConfig(Config):
         return self._environments
 
     def init_config(self, root_path: str | None, environment: str):
-        """ 設定ファイルを読みこみでパラメータにセットする """
+        """Reads the configuration file and sets the parameters"""
         config = super().init_config(root_path, environment)
 
-        # パラメータにセット
+        # Set the parameters
         self._environments = self._get_config_value(config, ['environments'])
         if self._environments is None:
             raise Exception('environments is not found in config.yml')

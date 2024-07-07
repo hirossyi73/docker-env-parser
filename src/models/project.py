@@ -1,4 +1,3 @@
-
 import fnmatch
 import os
 import shutil
@@ -14,62 +13,62 @@ class Project:
 
     @property
     def pjroot(self):
-        """ プロジェクトのルートパス """
+        """Root path of the project"""
         if self.config.is_multi_project_mode:
             return f"templates/{self.name}"
         return "templates"
 
     def get_pj_dist_root(self, environment: str):
-        """ プロジェクトのdistのルートパスを取得 """
+        """Get the root path of the project's dist"""
         if self.config.is_multi_project_mode:
             return f'dist/docker-{environment}/{self.name}'
         return f'dist/docker-{environment}'
 
     def build(self, environment: str):
-        # 除外する設定の場合はスキップ
+        # Skip if it's an ignored configuration
         if self.config.is_ignore:
             return
 
-        # "temp"フォルダ内のファイル一覧を取得
+        # Get a list of files in the "temp" folder
         files = self._get_all_files(f"{self.pjroot}/src")
         for file in files:
-            # "src/"までのパスを削除したファイル名取得
+            # Get the file name without the path up to "src/"
             file_rel_path = file.replace(f"{self.pjroot}/src/", '')
-            # 該当ファイルが除外設定の場合はcontinue
+            # Skip if the file is in the ignore list
             if self._is_ignore_file(file_rel_path):
                 continue
 
-            # ルートフォルダからのパスを作成
+            # Create the path relative to the root folder
             topath = self.get_pj_dist_root(environment) + f'/{file_rel_path}'
 
-            # ファイルを置き換える設定の場合、置き換え後のファイルを作成
+            # If it's a file to be replaced, create the replaced file
             if self._is_replace_file_content(file_rel_path):
-                # 置き換え後の文字列を取得
+                # Get the content to be replaced
                 content = self._get_target_content(file)
-                # 置き換え実施
+                # Perform the replacement
                 content = self._get_replaced_text(content)
-                # contentの内容を、topath.replace('.temp', '')のファイルに書き込む
+                # Write the content to the file specified by topath.replace('.temp', '')
                 self._write_replaced_content(topath.replace('.temp', ''), content)
-            # それ以外は、ファイルをそのままコピー
+            # Otherwise, copy the file as is
             else:
                 self._copy_file(file, topath)
 
     def _get_target_content(self, path: str):
-        """ 指定のファイルの内容を取得 """
+        """Get the content of the specified file"""
         with open(path, 'r') as path:
             content = path.read()
         return content
 
     def _get_replaced_text(self, content: str) -> str:
-        """ 置き換え後のテキストを取得 """
+        """Get the replaced text"""
         for _, parser in self.config.get_parsers().items():
-            # parserのparseメソッドを使って、contentを置き換える
+            # Use the parser's parse method to replace the content
             content = parser.parse(content)
 
         return content
 
     def _get_all_files(self, directory):
-        """指定のフォルダ以下の全ファイル一覧を取得"""
+        """Get a list of all files in the specified directory"""
         file_list = []
         for root, _, files in os.walk(directory):
             for file in files:
@@ -77,28 +76,28 @@ class Project:
         return file_list
 
     def _is_ignore_file(self, file_name: str) -> bool:
-        """ 除外するファイルかどうか """
-        # self.setting.ignore_filesでループし、ignore_fileが、ファイル名にワイルドカード形式で合致した場合、Trueを返す
+        """Check if it's an ignored file"""
+        # Loop through self.setting.ignore_files and return True if ignore_file matches the file name using wildcard pattern
         for ignore_file in self.config.ignore_files:
             if fnmatch.fnmatch(file_name, ignore_file):
                 return True
         return False
 
     def _is_replace_file_content(self, file_rel_path: str) -> bool:
-        """ ファイルの中身を置き換える設定かどうか """
-        # is_only_replace_tempの設定がtrueなら置き換える
+        """Check if it's a file to replace its content"""
+        # Return True if is_only_replace_temp setting is true
         if not self.config.is_only_replace_temp:
             return True
-        # 指定したfileの末尾が".temp"かどうかで判定
+        # Check if the specified file ends with ".temp"
         return file_rel_path.endswith('.temp')
 
     def _copy_file(self, frompath: str, topath: str):
-        """ ファイルのコピー """
+        """Copy the file"""
         os.makedirs(os.path.dirname(topath), exist_ok=True)
         shutil.copy(frompath, topath)
 
     def _write_replaced_content(self, topath: str, content: str):
-        """ 置き換え後のファイルを書き込む """
+        """Write the replaced file content"""
         os.makedirs(os.path.dirname(topath), exist_ok=True)
         with open(topath, 'w') as output_file:
             output_file.write(content)

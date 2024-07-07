@@ -1,16 +1,19 @@
-
-
 import os
-from models.config import Config, GlobalConfig
+from factories.project_factory import ProjectFactoryBase
+from models.config import GlobalConfig
 from models.project import Project
+from injector import inject
 
 
 class BuildUsecase:
     """ build files usecase """
     global_config: GlobalConfig
+    project_factory: ProjectFactoryBase
 
-    def __init__(self, config: Config):
+    @inject
+    def __init__(self, config: GlobalConfig, project_factory: ProjectFactoryBase):
         self.global_config = config
+        self.project_factory = project_factory
 
     def build(self):
         """ build files """
@@ -20,24 +23,21 @@ class BuildUsecase:
                 project.build(env)
 
     def _get_projects(self, environment: str) -> list[Project]:
-        """ ファイルパスを使用して、プロジェクト一覧を取得 """
-
-        # マルチプロジェクトモードでない場合、templatesフォルダ直下のみを対象とする
-        if not self.global_config.is_multi_project_mode:
-            # templatesフォルダ直下のフォルダ一覧を取得
-            local_config = Config()
-            local_config.init_config("templates", environment, self.global_config)
-            return [Project("templates", local_config)]
-
-        # マルチプロジェクトモードな場合、templatesフォルダ直下のフォルダ一覧を取得
-        dirs = os.listdir('templates')
+        """ Get a list of projects using file paths """
+        project_names = self._get_project_names()
         projects = []
-        for name in dirs:
-            local_config = Config()
-            local_config.init_config(f'templates/{name}', environment, self.global_config)
-            # プロジェクトクラスを作成
-            project = Project(name, local_config)
-            # プロジェクトクラスをリストに追加
+        for name in project_names:
+            # Create a project class
+            project = self.project_factory.make(name, environment, self.global_config)
+            # Add the project class to the list
             projects.append(project)
 
         return projects
+
+    def _get_project_names(self) -> list[str]:
+        """ Get a list of project names """
+        if not self.global_config.is_multi_project_mode:
+            return ["templates"]
+
+        dirs = os.listdir('templates')
+        return dirs
