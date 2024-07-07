@@ -1,8 +1,10 @@
-from typing import Optional
+from typing import Callable, Optional
 from models.config import Config, GlobalConfig
 
 
 class ConfigMock(Config):
+    get_replacement_file_names_callback: Optional[Callable] = None
+
     def set_replacements(self, replacements: Optional[dict[str, str]]) -> None:
         self._replacements = replacements
 
@@ -26,6 +28,12 @@ class ConfigMock(Config):
 
     def set_parsers(self, parsers: Optional[dict]) -> None:
         self._parsers = parsers
+
+    def _get_replacement_file_names(self, base_path: str) -> list[str]:
+        """Get the paths of the files to be replaced"""
+        if self.get_replacement_file_names_callback is not None:
+            return self.get_replacement_file_names_callback(base_path)
+        return super()._get_replacement_file_names(base_path)
 
 
 class GlobalConfigMock(GlobalConfig):
@@ -52,4 +60,3 @@ class GlobalConfigMock(GlobalConfig):
 
     def set_parsers(self, parsers: Optional[dict]) -> None:
         self._parsers = parsers
-

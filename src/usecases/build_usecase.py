@@ -20,7 +20,7 @@ class BuildUsecase:
         """ build files """
         for env in self.global_config.environments:
             for project in self._get_projects(env):
-                project.build(env)
+                project.build()
 
     def _get_projects(self, environment: str) -> list[Project]:
         """ Get a list of projects using file paths """

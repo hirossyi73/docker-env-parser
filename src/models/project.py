@@ -6,36 +6,43 @@ from models.const import FolderName
 
 
 class Project:
+    name: str
+    environment: str
     config: Config
 
-    def __init__(self, name: str, config: Config):
+    def __init__(self, name: str, environment: str, config: Config):
         self.name = name
+        self.environment = environment
         self.config = config
 
     @property
     def pj_root(self):
-        """Root path of the project"""
+        """path of the project"""
         if self.config.is_multi_project_mode:
             return f"{FolderName.TARGET_ROOT_FOLDER.value}/{self.name}"
         return self.name
 
-    def build(self, environment: str):
+    @property
+    def root_path(self):
+        """Root path of the project"""
+        return f"{self.pj_root}/{FolderName.REPLACE_TARGET.value}"
+
+    def build(self):
         # Skip if it's an ignored configuration
         if self.config.is_ignore:
             return
 
         # Get a list of files in the "temp" folder
-        root_path = f"{self.pj_root}/{FolderName.REPLACE_TARGET.value}"
-        files = self._get_all_files(root_path)
+        files = self._get_files()
         for file in files:
             # Get the file name without the path up to "src/"
-            file_rel_path = file.replace(f"{root_path}/", '')
+            file_rel_path = file.replace(f"{self.root_path}/", '')
             # Skip if the file is in the ignore list
             if self._is_ignore_file(file_rel_path):
                 continue
 
             # Create the path relative to the root folder
-            to_path = self._get_pj_dist_root(environment) + f'/{file_rel_path}'
+            to_path = self._get_pj_dist_root() + f'/{file_rel_path}'
 
             # If it's a file to be replaced, create the replaced file
             if self._is_replace_file_content(file_rel_path):
@@ -49,9 +56,9 @@ class Project:
             else:
                 self._copy_file(file, to_path)
 
-    def _get_pj_dist_root(self, environment: str):
+    def _get_pj_dist_root(self):
         """Get the root path of the project's dist"""
-        root_path = f'{FolderName.OUTPUT_ROOT.value}/docker-{environment}/{self.name}'
+        root_path = f'{FolderName.OUTPUT_ROOT.value}/docker-{self.environment}/{self.name}'
         if self.config.is_multi_project_mode:
             return f'{root_path}/{self.name}'
         return root_path
@@ -70,13 +77,41 @@ class Project:
 
         return content
 
-    def _get_all_files(self, directory):
+    def _get_files(self) -> dict[str, str]:
+        """
+        Get a list of all files in the specified directory. Consider the environment.
+        key: the real file path. 
+        value: removed environment file path
+        """
+        tmp_result = self._get_dir_file_paths()
+
+        # Re-loop result array. And if contains "." at least 2, check env in arg[-2].
+        # And if match arg[-2], set as key: arg[-2] value: arg[-1]
+        result = {}
+        for file_path in tmp_result:
+            dir_name = os.path.dirname(file_path)
+            file_name = os.path.basename(file_path)
+            file_keys = file_name.split('.')
+            # if file_keys length is less than 3(ex. "sample.txt"), append it to result
+            if len(file_keys) < 3:
+                result[file_path] = file_path
+                continue
+
+            # If file_keys length is 3 or more(ex. "sample.development.txt"), check if the last-1 element is the environment
+            if file_keys[-2] != self.environment:
+                continue
+            else:
+                result[file_path] = dir_name + '/' + '.'.join(f"{file_keys[:-3]}.{file_keys[-1]}")
+
+        return result
+
+    def _get_dir_file_paths(self) -> list[str]:
         """Get a list of all files in the specified directory"""
-        file_list = []
-        for root, _, files in os.walk(directory):
+        result = []
+        for root, _, files in os.walk(self.root_path):
             for file in files:
-                file_list.append(os.path.join(root, file))
-        return file_list
+                result.append(os.path.join(root, file))
+        return result
 
     def _is_ignore_file(self, file_name: str) -> bool:
         """Check if it's an ignored file"""

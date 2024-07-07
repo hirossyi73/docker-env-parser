@@ -1,10 +1,11 @@
+from typing import Callable, Optional
 from models.project import Project
 
 
 class ProjectMock(Project):
-    @property
-    def pj_root(self):
-        """Root path of the project"""
-        if self.config.is_multi_project_mode:
-            return f"samples/{self.name}"
-        return self.name
+    get_dir_file_paths_callback: Optional[Callable] = None
+
+    def _get_dir_file_paths(self, directory: str) -> list[str]:
+        if self.get_dir_file_paths_callback is not None:
+            return self.get_dir_file_paths_callback(directory)
+        return super()._get_dir_file_paths(directory)

@@ -78,7 +78,7 @@ class Config:
             config_dict = self._merge_config_dict(_config_dict, config_dict)
 
         # Set the parameters
-        self._set_config_from_dict(config_dict, base_path, global_config)
+        self._set_config_from_dict(environment, config_dict, base_path, global_config)
 
         return config_dict
 
@@ -103,7 +103,7 @@ class Config:
         self._parsers = parsers
         return self._parsers
 
-    def _set_config_from_dict(self, config_dict: dict, base_path: str, global_config: Config = None):
+    def _set_config_from_dict(self, environment: str, config_dict: dict, base_path: str, global_config: Config = None):
         """Set the parameters from the dictionary"""
 
         # Set the parameters
@@ -113,7 +113,7 @@ class Config:
         self._is_only_replace_temp = self._get_config_value(config_dict, ['settings', 'is_only_replace_temp'])
         self._is_multi_project_mode = self._get_config_value(config_dict, ['settings', 'is_multi_project_mode'])
         self._ignore_files = self._get_config_value(config_dict, ['settings', 'ignore_files'])
-        self._replacement_files = self._get_replacement_files(base_path)
+        self._replacement_files = self._get_replacement_files(environment, base_path)
 
         # Merge global config and config
         if global_config is not None:
@@ -167,17 +167,47 @@ class Config:
             return {}
         return r
 
-    def _get_replacement_files(self, base_path: str) -> dict[str, str]:
+    def _get_replacement_files(self, environment: str, base_path: str) -> dict[str, str]:
         """Get the list of files for replacements"""
-        result = {}
-        replacement_files_path = f'{base_path}{FolderName.REPLACEMENT_FILES.value}'
-        if not os.path.exists(replacement_files_path):
-            return result
-        files = os.listdir(replacement_files_path)
+        tmp_result = {}
+
+        # get all files in the replacement_files directory
+        files = self._get_replacement_file_names(base_path)
         for file in files:
-            # Set the file name (without extension) as the key and base_path + file as the value
-            result[os.path.basename(file)] = f'{base_path}{FolderName.REPLACEMENT_FILES.value}/{file}'
+            # get only .txt files
+            file_name = os.path.basename(file)
+            if not file_name.endswith('.txt'):
+                continue
+            # Remove ".txt" name.
+            base_name = file_name.replace('.txt', '')
+            tmp_result[base_name] = f'{base_path}/{FolderName.REPLACEMENT_FILES.value}/{file}'
+
+        # Re-loop result array. And if contains ".", check env in arg[1].
+        # And if match arg[1], set as key: arg[0] value: arg[1]
+        result = {}
+        for key, value in tmp_result.items():
+            if '.' not in key:
+                result[key] = value
+                continue
+
+            # Check environment. If not match, skip.
+            key_env = key.split('.')[1]
+            if key_env != environment:
+                continue
+            # Set key without env.
+            else:
+                result[key.split('.')[0]] = value
+
         return result
+
+    def _get_replacement_file_names(self, base_path: str) -> list[str]:
+        """Get the list of files for replacements"""
+        replacement_files_path = f'{base_path}/{FolderName.REPLACEMENT_FILES.value}'
+        if not os.path.exists(replacement_files_path):
+            return []
+
+        # get all files in the replacement_files directory
+        return os.listdir(replacement_files_path)
 
 
 class GlobalConfig(Config):

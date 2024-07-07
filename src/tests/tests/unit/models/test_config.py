@@ -89,11 +89,33 @@ class TestConfig(unittest.TestCase):
         self.assertIsInstance(config_dict, dict)
         self.assertEqual(config_dict, {"key": "value"})
 
-    def test_get_replacement_files(self):
-        base_path = "/path/to/base"
-        replacement_files = self.config._get_replacement_files(base_path)
+    def test_get_replacement_files_default(self):
+        replacement_files = self.config._get_replacement_files(self.base_path)
         self.assertIsInstance(replacement_files, dict)
-        self.assertEqual(replacement_files, {})
+        self.assertEqual(replacement_files, {
+            'break': f'{self.base_path}/replacement_files/break.txt',
+            'foo': f'{self.base_path}/replacement_files/foo.txt'
+        })
+
+    def test_get_replacement_files_include_env(self):
+        # set mock as callback
+        self.config.get_replacement_file_names_callback = lambda base_path: [
+            f'foo.txt',
+            f'bar.txt',
+            f'bar.develop.txt',
+            f'baz.txt',
+            f'baz.production.txt',
+            f'qux.production.txt',
+        ]
+
+        replacement_files = self.config._get_replacement_files("develop", self.base_path)
+
+        self.assertIsInstance(replacement_files, dict)
+        self.assertEqual(replacement_files, {
+            'foo': f'{self.base_path}/replacement_files/foo.txt',
+            'bar': f'{self.base_path}/replacement_files/bar.develop.txt',
+            'baz': f'{self.base_path}/replacement_files/baz.txt',
+        })
 
     def test_init_config(self):
         self.config.init_config(self.base_path, "development")
@@ -108,11 +130,11 @@ class TestConfig(unittest.TestCase):
 
         # test get_parsers
         parsers = self.config.get_parsers()
-        parser : ParamParser = parsers.get("foo")
+        parser: ParamParser = parsers.get("foo")
         self.assertTrue(parser is not None)
         self.assertEqual(parser.parse("This is {{foo}}"), "This is bar")
 
-        parser : ParamParser = parsers.get("baz")
+        parser: ParamParser = parsers.get("baz")
         self.assertTrue(parser is not None)
         self.assertEqual(parser.parse("This is {{baz}}"), "This is qux")
 
@@ -132,10 +154,10 @@ class TestConfig(unittest.TestCase):
 
         # test get_parsers
         parsers = self.config.get_parsers()
-        parser : ParamParser = parsers.get("foo")
+        parser: ParamParser = parsers.get("foo")
         self.assertTrue(parser is not None)
         self.assertEqual(parser.parse("This is {{foo}}"), "This is bar")
 
-        parser : ParamParser = parsers.get("baz")
+        parser: ParamParser = parsers.get("baz")
         self.assertTrue(parser is not None)
         self.assertEqual(parser.parse("This is {{baz}}"), "This is qux")

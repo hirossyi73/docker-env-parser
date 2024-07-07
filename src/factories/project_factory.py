@@ -18,6 +18,6 @@ class ProjectFactory(ProjectFactoryBase):
         local_config = Config()
         local_config.init_config(f'{FolderName.TARGET_ROOT_FOLDER.value}/{name}', environment, config)
         # Create a project class
-        project = Project(name, local_config)
+        project = Project(name, environment, local_config)
 
         return project

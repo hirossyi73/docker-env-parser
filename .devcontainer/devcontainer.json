@@ -8,7 +8,7 @@
   // 拡張機能
   "customizations": {
     "vscode": {
-      "extensions": ["ms-python.python", "ms-python.debugpy", "ms-azuretools.vscode-docker", "streetsidesoftware.code-spell-checker", "zhengxiaoyao0716.intelligence-change-case"]
+      "extensions": ["ms-python.python", "ms-python.debugpy", "ms-azuretools.vscode-docker", "streetsidesoftware.code-spell-checker", "zhengxiaoyao0716.intelligence-change-case", "ms-python.autopep8"]
     },
     "settings": {
       "editor.formatOnSave": true
