@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 from typing import Optional
+from models.const import FolderName
 import yaml
 
 
@@ -169,13 +170,13 @@ class Config:
     def _get_replacement_files(self, base_path: str) -> dict[str, str]:
         """Get the list of files for replacements"""
         result = {}
-        replacement_files_path = f'{base_path}replacement_files'
+        replacement_files_path = f'{base_path}{FolderName.REPLACEMENT_FILES.value}'
         if not os.path.exists(replacement_files_path):
             return result
         files = os.listdir(replacement_files_path)
         for file in files:
             # Set the file name (without extension) as the key and base_path + file as the value
-            result[os.path.basename(file)] = f'{base_path}replacement_files/{file}'
+            result[os.path.basename(file)] = f'{base_path}{FolderName.REPLACEMENT_FILES.value}/{file}'
         return result
 
 

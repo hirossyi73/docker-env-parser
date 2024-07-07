@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from models.config import Config
+from models.const import FolderName
 from models.project import Project
 
 
@@ -15,7 +16,7 @@ class ProjectFactory(ProjectFactoryBase):
 
     def make(self, name: str, environment: str, config: Config) -> Project:
         local_config = Config()
-        local_config.init_config(f'templates/{name}', environment, config)
+        local_config.init_config(f'{FolderName.TARGET_ROOT_FOLDER.value}/{name}', environment, config)
         # Create a project class
         project = Project(name, local_config)
 

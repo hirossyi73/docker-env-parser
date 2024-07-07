@@ -1,6 +1,7 @@
 import os
 from factories.project_factory import ProjectFactoryBase
 from models.config import GlobalConfig
+from models.const import FolderName
 from models.project import Project
 from injector import inject
 
@@ -36,7 +37,7 @@ class BuildUsecase:
     def _get_project_names(self) -> list[str]:
         """ Get a list of project names """
         if not self.global_config.is_multi_project_mode:
-            return ["templates"]
+            return [FolderName.TARGET_ROOT_FOLDER.value]
 
-        dirs = os.listdir('templates')
+        dirs = os.listdir(FolderName.TARGET_ROOT_FOLDER.value)
         return dirs

@@ -2,6 +2,7 @@ import fnmatch
 import os
 import shutil
 from models.config import Config
+from models.const import FolderName
 
 
 class Project:
@@ -15,7 +16,7 @@ class Project:
     def pj_root(self):
         """Root path of the project"""
         if self.config.is_multi_project_mode:
-            return f"templates/{self.name}"
+            return f"{FolderName.TARGET_ROOT_FOLDER.value}/{self.name}"
         return self.name
 
     def build(self, environment: str):
@@ -24,10 +25,11 @@ class Project:
             return
 
         # Get a list of files in the "temp" folder
-        files = self._get_all_files(f"{self.pj_root}/src")
+        root_path = f"{self.pj_root}/{FolderName.REPLACE_TARGET.value}"
+        files = self._get_all_files(root_path)
         for file in files:
             # Get the file name without the path up to "src/"
-            file_rel_path = file.replace(f"{self.pj_root}/src/", '')
+            file_rel_path = file.replace(f"{root_path}/", '')
             # Skip if the file is in the ignore list
             if self._is_ignore_file(file_rel_path):
                 continue
@@ -41,7 +43,7 @@ class Project:
                 content = self._get_target_content(file)
                 # Perform the replacement
                 content = self._get_replaced_text(content)
-                # Write the content to the file specified by topath.replace('.temp', '')
+                # Write the content to the file specified by to_path.replace('.temp', '')
                 self._write_replaced_content(to_path.replace('.temp', ''), content)
             # Otherwise, copy the file as is
             else:
@@ -49,9 +51,10 @@ class Project:
 
     def _get_pj_dist_root(self, environment: str):
         """Get the root path of the project's dist"""
+        root_path = f'{FolderName.OUTPUT_ROOT.value}/docker-{environment}/{self.name}'
         if self.config.is_multi_project_mode:
-            return f'dist/docker-{environment}/{self.name}'
-        return f'dist/docker-{environment}'
+            return f'{root_path}/{self.name}'
+        return root_path
 
     def _get_target_content(self, path: str):
         """Get the content of the specified file"""
