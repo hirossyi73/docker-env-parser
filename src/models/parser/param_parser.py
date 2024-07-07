@@ -1,8 +1,7 @@
-from models.parser.custom_parser import ParserBase
+from models.parser.parser_base import ParserBase
 
-
-class ConfigParser(ParserBase):
-    """Config Parser. (Get from yml config)"""
+class ParamParser(ParserBase):
+    """Parameter Parser. (Get from yml config)"""
     value: str
 
     from models.config import Config

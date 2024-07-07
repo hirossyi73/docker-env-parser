@@ -1,6 +1,5 @@
-import os
 import unittest
-from models.parser.file_parser import FileParser
+from models.parser.param_parser import ParamParser
 from tests.models.config_mock import ConfigMock, GlobalConfigMock
 
 
@@ -104,16 +103,16 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(self.config.is_auto_merge_config, False)
         self.assertEqual(self.config.is_only_replace_temp, False)
         self.assertEqual(self.config.is_multi_project_mode, True)
-        self.assertEqual(self.config.replacement_files, {})
+        self.assertEqual(len(self.config.replacement_files), 2)
         self.assertEqual(self.config.ignore_files, [])
 
         # test get_parsers
         parsers = self.config.get_parsers()
-        parser : FileParser = parsers.get("foo")
+        parser : ParamParser = parsers.get("foo")
         self.assertTrue(parser is not None)
         self.assertEqual(parser.parse("This is {{foo}}"), "This is bar")
 
-        parser : FileParser = parsers.get("baz")
+        parser : ParamParser = parsers.get("baz")
         self.assertTrue(parser is not None)
         self.assertEqual(parser.parse("This is {{baz}}"), "This is qux")
 
@@ -128,15 +127,15 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(self.config.is_auto_merge_config, False)
         self.assertEqual(self.config.is_only_replace_temp, True)
         self.assertEqual(self.config.is_multi_project_mode, True)
-        self.assertEqual(self.config.replacement_files, {})
+        self.assertEqual(len(self.config.replacement_files), 2)
         self.assertEqual(self.config.ignore_files, [])
 
         # test get_parsers
         parsers = self.config.get_parsers()
-        parser : FileParser = parsers.get("foo")
+        parser : ParamParser = parsers.get("foo")
         self.assertTrue(parser is not None)
         self.assertEqual(parser.parse("This is {{foo}}"), "This is bar")
 
-        parser : FileParser = parsers.get("baz")
+        parser : ParamParser = parsers.get("baz")
         self.assertTrue(parser is not None)
         self.assertEqual(parser.parse("This is {{baz}}"), "This is qux")

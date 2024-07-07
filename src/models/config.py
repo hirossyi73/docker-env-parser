@@ -87,13 +87,13 @@ class Config:
         if self._parsers is not None:
             return self._parsers
 
-        from models.parser.config_parser import ConfigParser
+        from models.parser.param_parser import ParamParser
         from models.parser.file_parser import FileParser
         parsers = {}
 
         # Get parser from config
         for key, value in self.replacements.items():
-            parsers[key] = ConfigParser(self, key, value)
+            parsers[key] = ParamParser(self, key, value)
 
         # Get file parser
         for key, path in self.replacement_files.items():
